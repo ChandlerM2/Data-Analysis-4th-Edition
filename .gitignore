@@ -1,0 +1,8 @@
+.venv
+__pycache__/
+*.pyc
+
+# The book's PDF stays local. Only the folder's README and outline.txt are committed.
+book/*
+!book/README.md
+!book/outline.txt
