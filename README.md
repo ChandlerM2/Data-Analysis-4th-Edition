@@ -3,16 +3,32 @@ My Analysis and ML journey using Avinash Navlani and Cornellius Yudha ijaya's bo
 
 ## Setup on a new machine
 
-This repo works the same on Windows, macOS, and Linux. Install [uv](https://docs.astral.sh/uv/),
-clone the repo, and from its root run:
+This repo works the same on Windows, macOS, and Linux. Set it up with Claude Code, or by hand.
 
-```
-uv sync
-uv run jupyter lab
-```
+### With Claude Code
 
-`uv sync` reads `uv.lock` and builds `.venv` with the exact package versions recorded there.
-`uv run jupyter lab` opens JupyterLab using that environment.
+| Step | Do this | What it does |
+|---|---|---|
+| 1 | Install [Git](https://git-scm.com/downloads) and [Claude Code](https://code.claude.com/docs/en/setup). | Git copies the repo to this computer, and Claude Code runs the setup. |
+| 2 | `git clone https://github.com/ChandlerM2/Data-Analysis-4th-Edition.git` | Downloads the repo into a `Data-Analysis-4th-Edition` folder. |
+| 3 | `cd Data-Analysis-4th-Edition`, then `claude` | Starts Claude Code inside the repo folder. |
+| 4 | Say **"set me up"**, or run `/setup`. | Claude runs the setup skill in `.claude/skills/setup/`. It checks the computer, fixes what it can ([uv](https://docs.astral.sh/uv/), Python, packages, the Git author email, VS Code extensions, and the writing guide in `~/.claude/rules/`), asks before deleting anything, and lists what's left for you, like adding the book PDF. |
+
+Running the skill again on a computer that's already set up changes nothing, so it's also the
+way to update an older clone.
+
+### By hand
+
+| Step | Do this | What it does |
+|---|---|---|
+| 1 | Install [uv](https://docs.astral.sh/uv/) and clone the repo. | uv installs Python and the project's packages. |
+| 2 | `uv sync`, from the repo root | Reads `uv.lock`, installs the pinned Python if it's missing, and builds `.venv` with the exact package versions recorded there. |
+| 3 | `git config --global user.email "<your no-reply address>"` | Commits carry your GitHub no-reply address, listed on GitHub's Emails settings page, so your personal email stays out of public commits. |
+| 4 | In VS Code, install the Python, Jupyter, and ty extensions, open a notebook, and pick the `.venv` kernel. | Notebooks run in the project environment. To use JupyterLab instead, run `uv run jupyter lab`. |
+| 5 | Optional: add the book PDF (see `book/README.md`), and copy `.claude/skills/setup/files/writing-for-future-readers.md` into `~/.claude/rules/`. | The PDF lets quizzes draw on the book's own pages, and the writing guide shapes how Claude writes docs and code comments on this computer. |
+
+To check a setup at any time, run
+`uv run --no-project python .claude/skills/setup/scripts/check_setup.py`.
 
 ## QUIZ: practicing what I've read
 

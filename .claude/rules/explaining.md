@@ -1,13 +1,12 @@
 # How to explain things to the learner
 
-The person working through this repo is building software engineering skill for analytics
-engineering and AI engineering work. Explanations written in engineer shorthand lose them:
-they can't carry the thread forward or explain it to anyone else.
+Explanations written in engineer shorthand lose the learner: they can't carry the thread
+forward or explain it to anyone else.
 
 **Treat every task as a chance to teach, not just to deliver.** A finished change the learner
 doesn't understand is worth less than a slower one they could rebuild themselves.
 
-**Slow is fine; it was chosen.** Don't trade understanding for speed. The goal is a mental
+**Slow is fine.** Don't trade understanding for speed. The goal is a mental
 model of the problem and the fix that still holds months from now.
 
 ## How to write it

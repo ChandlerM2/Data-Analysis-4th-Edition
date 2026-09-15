@@ -1,9 +1,10 @@
 # QUIZ: practice sessions
 
-The focus is the learner's learning. You handle the logistics (tracking what they have
-finished, what is due) and write new problems so they can practice. The learner never runs the
-tooling. The teaching rules in `.claude/CLAUDE.md` and `.claude/rules/explaining.md` still
-apply. The repo moves between Windows, macOS, and Linux, so paths use forward slashes.
+You handle the logistics (tracking what the learner has finished, what is due) and write new
+problems so they can practice. Practice goes at the start of a study session, while the learner
+is fresh, not after a long block of reading. The learner never runs the tooling. The teaching
+rules in `.claude/CLAUDE.md` and `.claude/rules/explaining.md` still apply. The repo moves
+between Windows, macOS, and Linux, so paths use forward slashes.
 
 ## Files
 
@@ -20,7 +21,7 @@ apply. The repo moves between Windows, macOS, and Linux, so paths use forward sl
 
 ## Signals
 
-Act on what the learner's message clearly means. If a message could start more than one flow,
+Act on what the learner's message means. If a message could start more than one flow,
 ask which one.
 
 | The learner says something like | You do |
@@ -44,7 +45,10 @@ ask which one.
 2. If a section is coming back after a `wrong`, open the notebook from its
    `date_last_practiced` and read the WRONG reviews. Write the new problem to test that same
    idea again from a different angle.
-3. Write 3 to 5 problems totaling 30 to 45 minutes, each with a time estimate. Most are tasks
+3. Write 3 to 5 problems totaling 30 to 45 minutes, or one multistep problem with a single
+   timer for the whole session. Each problem's time is a hard stop, because work comes with
+   deadlines and finishing in time is part of knowing the material. Set each limit so someone
+   who knows the material can finish everything the task asks, comments included. Most are tasks
    someone could be handed at work, stated as a goal and constraints, never naming the
    function or method. Mix in conceptual questions. Set each problem in one of the target
    jobsets from `.claude/CLAUDE.md` (analytics engineering across a whole company, AI
@@ -57,9 +61,10 @@ ask which one.
    or a public URL or API. Add a file in `QUIZ/` only when none of those work.
 5. Pre-verify before the learner sees it: run any setup cell and solve each problem yourself
    in the scratchpad. The solution never goes in the notebook.
-6. Notebook layout: a title cell (`# Quiz YYYY-MM-DD`, the mode, the sections, the time
-   estimate). Then for each problem N, a markdown cell `## Problem N: <title>` with the
-   section, type (coding or conceptual), time estimate, and task; a setup cell only if data is
+6. Notebook layout: a title cell (`# Quiz YYYY-MM-DD`, the mode, the sections, the total
+   time, and a note that each problem's time is a hard stop). Then for each problem N, a
+   markdown cell `## Problem N: <title>` with the section, type (coding or conceptual), time
+   estimate, and task; a setup cell only if data is
    generated; and an empty attempt cell labeled `N.0` (a code cell `# N.0`, or a markdown cell
    `**N.0**` for a conceptual answer). The learner explains their reasoning in comments.
 
@@ -67,17 +72,24 @@ ask which one.
 
 - Insert a markdown cell directly below the attempt titled `### N.0 CORRECT` or
   `### N.0 WRONG`.
+- Grade what is in the cell when the time ran out. Unfinished parts count as missing.
 - Grade the explanation as well as the code. Right code with a wrong explanation is WRONG,
   because it means the mental model is wrong.
-- WRONG: show exactly where the learner went wrong (quote the line or the comment), explain
-  the right mental model and why their version breaks, then leave an empty `N.1` cell below
-  for the next try. The learner writes the fix. Never edit an earlier attempt or review.
+- WRONG: show exactly where the learner went wrong or what is missing (quote the line or the
+  comment), and explain the right mental model and why their version breaks. Then give one
+  retry: an empty `N.1` cell below the review with its own time limit, also a hard stop. The
+  learner writes the fix. To keep the session's total time the same, delete the last problem
+  the learner hasn't started, choosing one whose time is close to the retry's; if it was the
+  only problem on its section, that section waits for its next practice. Never edit an
+  earlier attempt or review.
 - CORRECT: say what their reasoning got right, and add anything that deepens the concept.
 - Talk the review through in chat as well.
 
 ## Recording a session
 
-For each section practiced: `wrong` if any attempt on its problems was WRONG, otherwise
-`correct`. Run `record` once per section. `correct` moves it up one box; `wrong` sends it to
-box 1 so it comes back the next day. Days until due by box: 1, 3, 7, 14, 30. Tell the learner
+For each section practiced: `wrong` if any first attempt (`N.0`) on its problems was WRONG,
+otherwise `correct`. A retry never changes the result, because the first timed attempt is the
+test of what the learner retained; the retry shows the fix in the notebook. Run `record` once
+per section. `correct` moves it up one box; `wrong` sends it to box 1 so it comes back the next
+day. Days until due by box: 1, 3, 7, 14, 30. Tell the learner
 which sections are coming back and when.
