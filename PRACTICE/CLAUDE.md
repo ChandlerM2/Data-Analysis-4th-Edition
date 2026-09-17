@@ -23,10 +23,16 @@ The learner studies in two windows a day, and the clock enforces them because th
 for hard limits: a long session costs the next day's focus and sleep, which is when practice turns
 into memory.
 
-- **Morning, 04:00 to 08:00:** the warm-up, then at most 90 minutes of study, and never past 08:00.
-- **Closed, 08:00 to 19:00:** no warm-ups, reps, or new material. Quick logistics, such as a setup
+- **Day, 08:00 to 18:15, starting by 16:30:** the warm-up, then at most 90 minutes of study. A
+  session not started by 16:30 is spent for the day, because this block is the learner's reading and
+  learning time and a stub session can't hold the stretch. One begun before 16:30 runs to 18:15.
+- **Closed, 18:15 to 19:00:** no warm-ups, reps, or new material. Quick logistics, such as a setup
   problem or a question about the harness, are fine.
-- **Evening, 19:00 to 04:00:** 60 minutes in total, with the warm-up first if none happened that day.
+- **Evening, 19:00 to 23:00:** 60 minutes in total, with the warm-up first if none happened that day.
+  There is no last start here, because 23:00 cuts a late start short on its own: starting at 22:40
+  leaves 20 minutes, and that shrinking number is what keeps an eye on the time.
+
+A closing time always outranks a budget, so the minutes left are the smaller of the two.
 
 A hook runs `clock.py hook-prompt` on every learner message. It starts the clock on the first
 message in a window and puts a `CLOCK:` line in your context. Follow that line over your own sense
@@ -107,7 +113,7 @@ problem, not the idea.
    it, and put the next rep in the same message as the feedback.
 3. After the last rep, give one tip tied to today's reps (record it with `tip`), then one summary
    line: reps right, coins from the harness output, and when the missed ones come back. Coins
-   appear only here, so feedback stays about the idea. In the morning, run `clock.py warmup-done`.
+   appear only here, so feedback stays about the idea. In the day window, run `clock.py warmup-done`.
 4. At the first summary with no budget set, ask for a monthly fun budget and a few rewards with
    dollar prices, and record them with `set-rewards`. Coin prices come from the dollars (10 coins
    a dollar), so coins always match real money.

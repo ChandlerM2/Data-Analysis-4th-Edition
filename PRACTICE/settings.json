@@ -7,11 +7,13 @@
   "max_new_skills_per_day": 2,
   "clock": {
     "enabled": true,
-    "morning_opens": "04:00",
-    "morning_closes": "08:00",
+    "day_opens": "08:00",
+    "day_last_start": "16:30",
+    "day_closes": "18:15",
     "evening_opens": "19:00",
+    "evening_closes": "23:00",
     "warmup_max_minutes": 15,
-    "morning_study_minutes": 90,
+    "day_study_minutes": 90,
     "evening_minutes": 60,
     "wrap_up_minutes": 15
   }

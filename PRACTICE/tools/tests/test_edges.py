@@ -66,11 +66,16 @@ c, o = run(r, H, "status", "--now", "2026-09-13T06:00"); check("finished ticket 
 
 # --- clock edges
 r = fresh()
-for t, want in (("2026-09-18T03:59", "evening"), ("2026-09-18T04:00", "morning"), ("2026-09-18T07:59", "morning"),
-                ("2026-09-18T08:00", "closed"), ("2026-09-18T18:59", "closed"), ("2026-09-18T19:00", "evening"),
-                ("2026-09-19T00:00", "evening")):
+for t, want in (("2026-09-18T03:59", "closed"), ("2026-09-18T07:59", "closed"), ("2026-09-18T08:00", "day window"),
+                ("2026-09-18T16:29", "day window"), ("2026-09-18T16:30", "had to start by 16:30"),
+                ("2026-09-18T18:15", "closed"), ("2026-09-18T19:00", "evening"), ("2026-09-18T22:59", "evening"),
+                ("2026-09-18T23:00", "closed"), ("2026-09-19T00:00", "closed")):
     c, o = run(r, C, "status", "--now", t)
-    check(f"clock at {t[11:]} is {want}", (want in o) if want != "closed" else ("closed" in o), o)
+    check(f"clock at {t[11:]} is {want}", want in o, o)
+# A day session already going runs to 18:15: the last start only blocks opening a new one.
+run(r, C, "hook-prompt", "--now", "2026-09-18T16:00")
+c, o = run(r, C, "status", "--now", "2026-09-18T16:45"); check("a day session started before 16:30 keeps running past it", "45 min used" in o, o)
+c, o = run(r, C, "status", "--now", "2026-09-18T18:15"); check("18:15 closes the day window mid-session", "closed" in o, o)
 (r / "PRACTICE" / "time.csv").write_text("study_day,window,event,time\ngarbage row\n2026-09-18,evening,start,not-a-time\n", encoding="utf-8")
 c, o = run(r, C, "hook-prompt", "--now", "2026-09-18T20:00"); check("corrupt time.csv rows are skipped and the hook still answers", c == 0 and "CLOCK:" in o, o)
 c, o = run(r, H, "status", "--now", "2026-09-18T20:00"); check("harness status survives a corrupt time.csv", c == 0, o)
