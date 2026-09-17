@@ -153,12 +153,12 @@ def check_environment(report: Report) -> None:
         report.append(("ok", "environment", f"Python {version}, packages match uv.lock, NumPy and pandas import"))
 
 
-def check_quiz_tools(report: Report) -> None:
-    result = run("uv", "run", "--no-project", "python", "QUIZ/tools/quiz.py", "validate")
+def check_practice_tools(report: Report) -> None:
+    result = run("uv", "run", "--no-project", "python", "PRACTICE/tools/harness.py", "validate")
     if succeeded(result):
-        report.append(("ok", "quiz tools", result.stdout.strip()))
+        report.append(("ok", "practice tools", result.stdout.strip()))
     else:
-        report.append(("info", "quiz tools", "QUIZ/tools/quiz.py validate failed. Ask Claude to look at QUIZ/chapters.json."))
+        report.append(("info", "practice tools", "PRACTICE/tools/harness.py validate failed. Ask Claude to look at PRACTICE/log.jsonl."))
 
 
 def check_writing_guide(report: Report) -> None:
@@ -217,7 +217,7 @@ def check_java(report: Report) -> None:
 def main() -> int:
     report: Report = []
     # History comes before the environment because resetting to GitHub can change uv.lock.
-    for check in (check_uv, check_git_email, check_git_history, check_environment, check_quiz_tools,
+    for check in (check_uv, check_git_email, check_git_history, check_environment, check_practice_tools,
                   check_writing_guide, check_vscode, check_book, check_java):
         check(report)
 

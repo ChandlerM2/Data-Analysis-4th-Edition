@@ -1,12 +1,32 @@
 {
   "hooks": {
-    "PostToolUse": [
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --no-project python \"$CLAUDE_PROJECT_DIR/PRACTICE/tools/harness.py\" hook-session-start"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --no-project python \"$CLAUDE_PROJECT_DIR/PRACTICE/tools/clock.py\" hook-prompt"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
       {
         "matcher": "Edit|Write",
         "hooks": [
           {
             "type": "command",
-            "command": "uv run --no-project python \"$CLAUDE_PROJECT_DIR/QUIZ/tools/quiz.py\" hook"
+            "command": "uv run --no-project python \"$CLAUDE_PROJECT_DIR/PRACTICE/tools/harness.py\" hook-guard"
           }
         ]
       }

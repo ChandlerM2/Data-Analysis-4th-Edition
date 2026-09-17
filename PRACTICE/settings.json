@@ -1,0 +1,18 @@
+{
+  "coding_chars_per_minute": 30,
+  "reading_words_per_minute": 120,
+  "day_starts_hour": 4,
+  "weekly_practice_days": 4,
+  "new_skill_backlog_limit": 8,
+  "max_new_skills_per_day": 2,
+  "clock": {
+    "enabled": true,
+    "morning_opens": "04:00",
+    "morning_closes": "08:00",
+    "evening_opens": "19:00",
+    "warmup_max_minutes": 15,
+    "morning_study_minutes": 90,
+    "evening_minutes": 60,
+    "wrap_up_minutes": 15
+  }
+}

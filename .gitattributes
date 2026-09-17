@@ -1,0 +1,4 @@
+# The practice record is append-only. Union merges keep both computers' new lines instead of
+# stopping on a conflict, and harness.py replays events in time order, so the result is the same.
+PRACTICE/log.jsonl text eol=lf merge=union
+PRACTICE/time.csv text eol=lf merge=union

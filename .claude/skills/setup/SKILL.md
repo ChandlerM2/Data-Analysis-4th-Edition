@@ -49,7 +49,10 @@ handle). The script prints checks in the order to fix them.
 - **branch holding old history:** show the learner what the line lists, and after they confirm,
   `git branch -D <branch>`. Never push these branches, for the same reason as above.
 - **environment:** `uv sync`. It installs the Python version in `.python-version` if needed and
-  builds `.venv` from `uv.lock`.
+  builds `.venv` from `uv.lock`. When it creates or rebuilds `.venv`, tell the learner in the
+  report to run **Developer: Reload Window** in VS Code before choosing a kernel, because the
+  Python and Jupyter extensions keep the environment list they built before `.venv` existed, and
+  the kernel picker shows `.venv` for an instant and then drops it until the window reloads.
 - **writing guide, not installed:** copy `.claude/skills/setup/files/writing-for-future-readers.md`
   to `~/.claude/rules/`, creating the folder if needed. Claude Code loads that folder in every
   project on the computer.

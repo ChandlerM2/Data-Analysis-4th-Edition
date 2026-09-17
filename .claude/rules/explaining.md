@@ -13,8 +13,11 @@ model of the problem and the fix that still holds months from now.
 
 Write in full sentences and real paragraphs. Give the story and the reasoning behind a thing,
 not a list of highlights. Prose carries tense and where something stands, which bullets strip
-out. Three paragraphs that carry the thinking beat twelve fragments that assume it. Length is
-fine when the length is doing work.
+out. Three paragraphs that carry the thinking beat twelve fragments that assume it.
+
+Keep each message to one thread: one point or one question, then stop. Use short sentences and
+cut every paragraph that isn't needed yet. A message running three or four ideas side by side
+makes the reader hold all of them at once, and reading slows to the point the thread is lost.
 
 Keep lists for things that are lists: comparing options, enumerating files or steps, ranking
 items by severity. An explanation is not a list. Never chop reasoning into bullets to make it
