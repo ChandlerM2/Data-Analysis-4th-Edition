@@ -15,6 +15,18 @@
     "warmup_max_minutes": 15,
     "day_study_minutes": 90,
     "evening_minutes": 60,
-    "wrap_up_minutes": 15
+    "wrap_up_minutes": 15,
+    "daily_minutes": 240,
+    "idle_grace_minutes": 0,
+    "stamp_every_minutes": 5,
+    "away_after_minutes": 30,
+    "check_in_after_minutes": 20,
+    "weekend": {
+      "enabled": true,
+      "opens_day": "Friday",
+      "opens": "17:00",
+      "closes_day": "Sunday",
+      "closes": "12:00"
+    }
   }
 }

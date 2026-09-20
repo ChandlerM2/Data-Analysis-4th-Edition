@@ -2,7 +2,7 @@
 never has to.
 
 PRACTICE/log.jsonl is the only record. Every command replays it from the top to work out each
-skill's layer and due day, the coins, the week's practice days, the reading position, and the
+skill's layer and due day, the money, the week's practice days, the reading position, and the
 open why-questions, so the state can't drift from the history. A wrong entry gets corrected with
 an `amend` event, never by editing a line, and a hook blocks Claude's Edit and Write tools on the
 log.
@@ -11,7 +11,7 @@ log.
     due                 work due now: skills needing a worked example, then scheduled reps
     skills              every skill with its layer, due day, and last rep
     add-skill           add a skill drafted from pages the learner read
-    skill-edit          reword or re-rate a skill, or drop one added by mistake the same day
+    skill-edit          reword, re-rate or re-page a skill, or drop one added by mistake the same day
     rep                 record one skill's result on one rep (--test-out to retire a known skill)
     fix                 record that the learner fixed a wrong rep and explained the bug
     amend               change a recorded result after a dispute
@@ -19,9 +19,10 @@ log.
     question            log a why-question, or a rule change to confirm next session (--rule); --close N
     ticket              record a finished or abandoned weekly ticket
     tip                 record a tip that was given, and rebuild PRACTICE/tips.md
-    set-rewards         set the learner's monthly budget and dollar-priced menu, from now on
-    redeem              spend coins on an item from the menu
+    section             record a section of the book worked through and written up in the notes
+    redeem              record what the learner spent the money on
     target              time target in seconds for a timed rep
+    guide               how practice works: the loop, the clock, the layers, the money
     validate            check the log and settings
     hook-session-start  SessionStart hook entry point
     hook-guard          PreToolUse hook entry point
@@ -61,12 +62,18 @@ ALONE_LAYER = 4
 # Multiplier on the learner's own typing and reading time for a timed rep at each layer.
 TIME_SCALE = {4: 2.0, 5: 1.5, 6: 1.25, 7: 1.25}
 
-# Coin rates live in code, not settings, so changing them is a visible code change that applies
-# from the commit on, and no one can raise them to repay old reps. The learner controls the money
-# through the budget and menu instead (`set-rewards`).
-COINS_PER_DOLLAR = 10
-DAILY_CAP = 60
-PAY = {"warmup_start": 5, "scheduled_rep": 10, "clean_bonus": 10, "study_catch": 10, "fix": 10, "ticket": 40}
+# Pay rates live in code, not settings, so changing them is a visible code change that applies from
+# the commit on, and no one can raise them to repay work already done. Amounts are dollars. Every
+# rate is a whole dollar or a quarter, and both are exact in binary floating point, so the totals
+# never drift the way an amount like $0.10 would.
+PAY = {"warmup_start": 1.0, "scheduled_rep": 1.0, "clean_bonus": 2.0, "study_catch": 4.0,
+       "fix": 1.0, "section": 1.0, "ticket": 20.0, "regained_layer": 1.0}
+# A rep below the best layer a skill has reached pays this instead of the rates above, so the work
+# still pays without grinding old ground paying like new.
+REPEAT_PAY = 0.25
+# The evening window pays double, because coming back after work is the hard session to start.
+EVENING_MULTIPLIER = 2
+# There is no daily cap and no monthly budget: the clock is the only limit on earning.
 
 KINDS = ("code", "concept")
 IMPORTANCE = ("core", "useful")
@@ -86,8 +93,8 @@ EVENT_FIELDS = {
     "question": set(),
     "ticket": {"id", "result"},
     "tip": {"text"},
-    "rewards": {"budget_dollars", "menu"},
-    "redeem": {"item", "coins"},
+    "section": {"heading"},
+    "redeem": {"item", "dollars"},
 }
 SETTINGS_KEYS = ("coding_chars_per_minute", "reading_words_per_minute", "day_starts_hour",
                  "weekly_practice_days", "new_skill_backlog_limit", "max_new_skills_per_day")
@@ -179,6 +186,12 @@ class Skill:
     layer: int
     anchor: datetime
     retired: str | None = None  # "mastered", "tested out", or "dropped"
+    # The highest layer this skill has ever been worked at. A rep at or below it pays the repeat
+    # rate, so a wrong answer still costs the layer but the climb back is not a second payday.
+    high_layer: int = 0
+    # True once the skill has been worked below its best layer, so the rep that wins that layer
+    # back can be told apart from one that simply repeats it.
+    below_high: bool = False
     reps: int = 0
     history: list = field(default_factory=list)
     test_out_days: set = field(default_factory=set)
@@ -195,12 +208,11 @@ class State:
     skills: dict = field(default_factory=dict)
     reading: dict | None = None
     last_activity: datetime | None = None
-    coins_by_day: dict = field(default_factory=lambda: defaultdict(int))
-    coins_by_month: dict = field(default_factory=lambda: defaultdict(int))
-    redeemed: int = 0
-    budget_dollars: int | None = None
-    menu: list = field(default_factory=list)
-    pending_rewards: tuple | None = None  # (study day it takes effect, event)
+    dollars_by_day: dict = field(default_factory=lambda: defaultdict(float))
+    dollars_by_month: dict = field(default_factory=lambda: defaultdict(float))
+    spent: float = 0.0
+    spending: list = field(default_factory=list)  # [(stamp, item, dollars)]
+    sections: set = field(default_factory=set)
     practice_days: set = field(default_factory=set)
     tickets: list = field(default_factory=list)
     tips: list = field(default_factory=list)
@@ -209,20 +221,17 @@ class State:
     fixed: set = field(default_factory=set)
 
     @property
-    def earned(self) -> int:
-        return sum(self.coins_by_day.values())
+    def earned(self) -> float:
+        return sum(self.dollars_by_day.values())
 
     @property
-    def balance(self) -> int:
-        return self.earned - self.redeemed
+    def balance(self) -> float:
+        return self.earned - self.spent
 
 
-def settle_rewards(state: State, day: date) -> None:
-    """Apply a budget and menu change once its study day has arrived."""
-    if state.pending_rewards and day >= state.pending_rewards[0]:
-        state.budget_dollars = state.pending_rewards[1]["budget_dollars"]
-        state.menu = state.pending_rewards[1]["menu"]
-        state.pending_rewards = None
+def money(dollars: float) -> str:
+    """Dollars the way the learner reads them, so a quarter shows as $0.25."""
+    return f"-${-dollars:,.2f}" if dollars < 0 else f"${dollars:,.2f}"
 
 
 def effective_result(result: str, help_level: int, layer: int) -> tuple[str, str | None]:
@@ -256,26 +265,31 @@ def replay(events: list[dict], settings: dict) -> State:
     no_attempt_reps = set()
     warmup_days, study_days = set(), set()
 
-    def pay(day: date, amount: int, daily_cap: bool = True) -> None:
-        """Pay up to the daily cap and, once a budget is set, the monthly budget in effect today.
-        A budget change can't repay or claw back earlier months."""
-        room = DAILY_CAP - state.coins_by_day[day] if daily_cap else amount
-        month = (day.year, day.month)
-        if state.budget_dollars is not None:
-            room = min(room, state.budget_dollars * COINS_PER_DOLLAR - state.coins_by_month[month])
-        paid = max(0, min(amount, room))
-        state.coins_by_day[day] += paid
-        state.coins_by_month[month] += paid
+    def evening(at: datetime) -> bool:
+        """True in the weekday evening window. The weekend is one window rather than an evening, so
+        it pays the plain rate: the double is for coming back after a work day, not for Saturday."""
+        import clock
+        try:
+            return clock.window_at(at, clock.load_config())[0] == "evening"
+        except Exception:
+            return False
 
-    def claw_back(day: date, amount: int) -> None:
-        state.coins_by_day[day] -= amount
-        state.coins_by_month[(day.year, day.month)] -= amount
+    def pay(day: date, amount: float, at: datetime) -> float:
+        """Pay in dollars, doubled in the evening window. Nothing caps this: the clock is the limit,
+        so the only way to earn more is to spend more time at the desk."""
+        paid = amount * (EVENING_MULTIPLIER if evening(at) else 1)
+        state.dollars_by_day[day] += paid
+        state.dollars_by_month[(day.year, day.month)] += paid
+        return paid
+
+    def claw_back(day: date, amount: float) -> None:
+        state.dollars_by_day[day] -= amount
+        state.dollars_by_month[(day.year, day.month)] -= amount
 
     for event in events:
         at, kind = event["_at"], event["type"]
         day = study_day(at, hour)
         where = f"log line {event['_line']}"
-        settle_rewards(state, day)
 
         if kind == "skill":
             if not SKILL_ID.match(event["id"]) or event["id"] in state.skills:
@@ -293,6 +307,7 @@ def replay(events: list[dict], settings: dict) -> State:
                 raise LogError(f"{where}: unknown skill {event['id']!r}")
             skill.text = event.get("text", skill.text)
             skill.importance = event.get("importance", skill.importance)
+            skill.pages = event.get("pages", skill.pages)
             if event.get("drop"):
                 if study_day(skill.added, hour) != day:
                     raise LogError(f"{where}: {skill.id} can only be dropped on the day it was added; "
@@ -335,7 +350,7 @@ def replay(events: list[dict], settings: dict) -> State:
             layer_before = skill.layer
             result, _ = effective_result(result, event["help"], layer_before)
             # "idk", a blank, or a guess with no reasoning still counts as wrong for the schedule,
-            # but pays nothing, so due reps can't be farmed for coins without trying them.
+            # but pays nothing, so due reps can't be farmed for money without trying them.
             attempted = not event.get("no_attempt")
             if not attempted:
                 result = "wrong"
@@ -351,27 +366,44 @@ def replay(events: list[dict], settings: dict) -> State:
             earlier = list(rep_outcomes[event["rep"]])
             outcome = (layer_before, result, event["help"], event.get("seconds"), event.get("target_seconds"))
             rep_outcomes[event["rep"]].append(outcome)
+            # Full rates are for ground this skill has not stood on before. A rep below the best
+            # layer it has reached pays the repeat rate, so the work still pays without the
+            # drop-and-climb loop paying twice. Winning that best layer back after dropping below
+            # it is the skill being mastered rather than merely held, so it pays full and a dollar
+            # more; that dollar is why the climb is worth making rather than worth repeating.
+            new_ground = layer_before > skill.high_layer
+            regained = layer_before == skill.high_layer and skill.below_high
+            if layer_before < skill.high_layer:
+                skill.below_high = True
+            elif new_ground or regained:
+                skill.below_high = False
+            skill.high_layer = max(skill.high_layer, layer_before)
+            earns_full = attempted and (new_ground or regained)
             if not attempted:
                 pass
-            elif layer_before >= 3:
-                if day not in warmup_days:
-                    warmup_days.add(day)
-                    pay(day, PAY["warmup_start"])
-                if not any(layer >= 3 for layer, *_ in earlier):
-                    pay(day, PAY["scheduled_rep"])
-            elif day not in study_days:
-                study_days.add(day)
-                pay(day, PAY["study_catch"])
+            elif not earns_full:
+                pay(day, REPEAT_PAY, at)
+            else:
+                if regained:
+                    pay(day, PAY["regained_layer"], at)
+                if layer_before >= 3:
+                    if day not in warmup_days:
+                        warmup_days.add(day)
+                        pay(day, PAY["warmup_start"], at)
+                    if not any(layer >= 3 for layer, *_ in earlier):
+                        pay(day, PAY["scheduled_rep"], at)
+                elif day not in study_days:
+                    study_days.add(day)
+                    pay(day, PAY["study_catch"], at)
             # Bonus for a clean, on-time rep at layer 4 and up, once per rep. A rep covering two
             # skills pays it only when every alone skill in it is clean.
-            if layer_before >= ALONE_LAYER and attempted:
+            if layer_before >= ALONE_LAYER and earns_full:
                 clean = (result == "correct" and event["help"] == 0
                          and (outcome[4] is None or (outcome[3] or 0) <= outcome[4]))
                 alone_earlier = [o for o in earlier if o[0] >= ALONE_LAYER]
                 if clean and not alone_earlier:
-                    before = state.coins_by_day[day]
-                    pay(day, PAY["clean_bonus"])
-                    bonus_paid[event["rep"]] = (day, state.coins_by_day[day] - before)
+                    paid = pay(day, PAY["clean_bonus"], at)
+                    bonus_paid[event["rep"]] = (day, paid)
                 elif not clean and event["rep"] in bonus_paid:
                     paid_day, amount = bonus_paid.pop(event["rep"])
                     claw_back(paid_day, amount)
@@ -385,7 +417,7 @@ def replay(events: list[dict], settings: dict) -> State:
             if event["rep"] in state.fixed:
                 raise LogError(f"{where}: rep {event['rep']} was already fixed")
             state.fixed.add(event["rep"])
-            pay(day, PAY["fix"])
+            pay(day, PAY["fix"], at)
 
         elif kind == "amend":
             if (event["rep"], event["skill"]) not in state.reps_seen:
@@ -413,26 +445,28 @@ def replay(events: list[dict], settings: dict) -> State:
                 raise LogError(f"{where}: ticket {event['id']} is already recorded")
             state.tickets.append({"id": event["id"], "result": event["result"], "at": at})
             if event["result"] == "done":
-                # A ticket is once a week, so it sits outside the daily cap: a full warm-up the
-                # same morning shouldn't make the week's biggest piece of work pay nothing.
-                pay(day, PAY["ticket"], daily_cap=False)
+                # The week's biggest piece of work, and the only one that trains picking the tool
+                # for a request nobody has broken down first, so it pays the most.
+                pay(day, PAY["ticket"], at)
 
         elif kind == "tip":
             state.tips.append((stamp(at), event["text"]))
 
-        elif kind == "rewards":
-            # The first budget and menu apply at once. Later changes start the next study day, so a
-            # price can't be dropped, redeemed, and put back in one sitting.
-            if state.budget_dollars is None:
-                state.budget_dollars = event["budget_dollars"]
-                state.menu = event["menu"]
-            else:
-                state.pending_rewards = (day + timedelta(days=1), event)
+        elif kind == "section":
+            # One section of the book, read and written up in the learner's own notes. Paid once,
+            # because a heading already worked through is not new ground the second time.
+            key = event["heading"].strip().casefold()
+            if key in state.sections:
+                raise LogError(f"{where}: section {event['heading']!r} is already recorded")
+            state.sections.add(key)
+            pay(day, PAY["section"], at)
 
         elif kind == "redeem":
-            if event["coins"] > state.balance:
-                raise LogError(f"{where}: redeeming {event['coins']} coins overdraws the balance of {state.balance}")
-            state.redeemed += event["coins"]
+            # Whatever the learner actually spent the money on. There is no menu and no price list:
+            # they say what it was, and the balance follows real life rather than the other way
+            # round, so it is allowed to go negative.
+            state.spent += event["dollars"]
+            state.spending.append((stamp(at), event["item"], event["dollars"]))
 
     return state
 
@@ -523,6 +557,36 @@ def same_window(earlier: datetime, now: datetime, hour: int) -> bool:
             and clock.window_at(earlier, config)[0] == clock.window_at(now, config)[0])
 
 
+READ_ONLY = ("status", "due", "skills", "guide", "validate", "target", "report",
+             "hook-session-start", "hook-guard")
+
+
+def warmup_done(today: date) -> bool:
+    """Whether the day's warm-up was marked done, from the clock's own rows."""
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    try:
+        import clock
+        return any(r["event"] == "warmup-done" and r["study_day"] == today.isoformat()
+                   for r in clock.read_rows())
+    except (Exception, SystemExit):
+        return False
+
+
+def session_locked() -> str:
+    """The lock message when a session has timed out and no new one has begun, else "". Practice is
+    recorded by this file alone, so refusing here is what makes the lock real: the learner asked
+    for a stop they cannot talk anyone out of."""
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    try:
+        import clock
+        if not clock.load_config().get("enabled", True):
+            return ""
+        shut = clock.locked(clock.read_rows())
+    except (Exception, SystemExit):
+        return ""
+    return clock.LOCK_MESSAGE.format(when=shut.strftime("%H:%M")) if shut else ""
+
+
 def clock_line(now: datetime) -> str:
     """The session clock's view of this moment, from clock.py next to this file."""
     sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -532,6 +596,82 @@ def clock_line(now: datetime) -> str:
         return clock.describe(clock.clock_at(now, config), now, config)
     except (Exception, SystemExit) as exc:  # a broken clock must not block the session status
         return f"CLOCK: unavailable ({exc})"
+
+
+def guide_text(settings: dict) -> str:
+    """How practice works, with the numbers read from settings.json so the page can't drift from
+    the tools. Printed by `guide`, and quoted in README.md for anyone reading the repo."""
+    c = settings["clock"]
+    w = c.get("weekend") or {}
+    rows = [(f"day      {c['day_opens']} to {c['day_closes']}, start by {c['day_last_start']}",
+             f"up to {c['warmup_max_minutes']} of warm-up, then {c['day_study_minutes']} of study"),
+            (f"closed   {c['day_closes']} to {c['evening_opens']}", "logistics only: no reps, no new material"),
+            (f"evening  {c['evening_opens']} to {c['evening_closes']}", f"{c['evening_minutes']} minutes in total")]
+    if w.get("opens_day") and w.get("enabled", True):
+        rows.append((f"weekend  {w['opens_day'][:3]} {w['opens']} to {w['closes_day'][:3]} {w['closes']}",
+                     "one window, no warm-up split, no last start"))
+    windows = "\n".join(f"  {when:<41}{what}" for when, what in rows)
+    pay = "   ".join(f"{name.replace('_', ' ')} {money(amount)}" for name, amount in PAY.items())
+    return f"""HOW PRACTICE WORKS
+
+THE LOOP
+  1. Open Claude Code in this repo. A hook prints where you stopped reading, what is due, how the
+     week looks, and where the clock stands. Claude opens with the first warm-up rep, or with the
+     planned first step when today's warm-up is already done.
+  2. Warm-up, 5 to 10 minutes: up to 5 reps on skills that came due today, one per message. It
+     belongs to the study day, not the session, so it happens once however many times you open.
+  3. Study, or the weekly ticket. Study is reading the book and typing its code, predicting what
+     each new cell prints before you run it. A ticket is a job request from a manager at Cobalt
+     Trail Outfitters that you plan in three steps, then build with the docs open.
+  4. Reps on demand, any time there are minutes left. Ask and Claude runs reps on anything you
+     name, before the day's work, after it, or partway through; the clock is the only limit. A rep
+     on a skill that is not due pays nothing and does not move its layer, because recall builds
+     after a night's sleep, not an hour after a miss.
+  5. Closing: where you stopped reading, the first step for next time, the one idea from today
+     worth keeping, and the clock is ended.
+
+THE CLOCK ({SETTINGS_FILE.name})
+{windows}
+  Minutes come from the marks your messages leave. A session you close counts in full, gaps and all;
+  one you walk away from counts to your last message. After {c['check_in_after_minutes']} quiet minutes Claude checks in. After
+  {c['away_after_minutes']} the session is over: the clock closes it back at that message and practice locks, so
+  nothing more is recorded until you quit and start a new session. Reading the log still works.
+  Studying away from the chat is added back with `clock.py charge --minutes N`, so say so when you
+  have been reading.
+  Over all of them: {c['daily_minutes']} minutes a study day, the warm-up counted with them, because it
+  is all time worked. A study day runs {settings['day_starts_hour']:02d}:00 to {settings['day_starts_hour']:02d}:00, so a late night belongs to the day it
+  started on. A closing time always outranks a budget, so what is left is the smaller of the two.
+
+THE LAYERS: how much help a skill still gets
+  1    you type a worked example and predict its output, in the chat
+  2    parsons or fill: you reorder shuffled lines or type the missing one, in a session notebook
+  3    you do the rep; Claude asks guiding questions and answers only on the second ask
+  4-7  you do the rep alone, in a different format or setting each time
+  A skill moves up when you get it without help and back down when you do not, and its next rep is
+  scheduled further out each time it holds.
+
+REP FORMATS
+  {', '.join(FORMATS)}
+
+MONEY (real dollars, quoted only at the warm-up summary)
+  {pay}
+  A rep below the best layer a skill has reached pays {money(REPEAT_PAY)} instead of the rates
+  above. Winning that best layer back pays the full rate and {money(PAY["regained_layer"])} on top,
+  because that is the skill being mastered. The evening window pays double.
+  No daily cap and no monthly budget: the clock is the only limit. Tell Claude what you spent the
+  money on and it records that against the balance.
+
+WHERE THINGS LIVE
+  ChapterN - Topic/   your notebooks and chapterN.md, your notes in your own words
+  PRACTICE/log.jsonl  every skill, rep, tip, and reward event: the only record, replayed each run
+  PRACTICE/time.csv   one row per clock event, which is where the minutes come from
+  PRACTICE/sessions/  practice notebooks Claude builds for layer 2 and up
+  PRACTICE/CLAUDE.md  the rules Claude follows to run all of this
+
+COMMANDS
+  uv run --no-project python PRACTICE/tools/harness.py <command>   (status, due, skills, guide, ...)
+  uv run --no-project python PRACTICE/tools/clock.py <command>     (status, start, end, charge, report)
+  Add --help to either for the full list. Claude runs these; you never have to."""
 
 
 def status_text(state: State, settings: dict, now: datetime, check_git: bool) -> str:
@@ -572,13 +712,16 @@ def status_text(state: State, settings: dict, now: datetime, check_git: bool) ->
     if whys:
         lines.append("Open why-questions (turn one into a warm-up rep, then close it): "
                      + "; ".join(f"#{n} {q[0]}" for n, q in whys[:3]))
+    # The warm-up belongs to the study day, not to the session, so a later session on the same day
+    # goes straight to the work instead of opening with reps again. The mark is `clock.py
+    # warmup-done`, run after the last warm-up rep: a rep alone can't say it, because study sessions
+    # record reps too.
+    lines.append("Warm-up: done today." if warmup_done(today)
+                 else "Warm-up: not done today, so open with it.")
     lines.append(f"Week: {week_days(state, today)} of {settings['weekly_practice_days']} practice days; "
                  f"{week_streak(state, settings, today)} week streak.")
-    month = state.coins_by_month[(today.year, today.month)]
-    if state.budget_dollars is None:
-        lines.append(f"Coins: balance {state.balance}. No budget or menu yet: set them at the first warm-up summary.")
-    else:
-        lines.append(f"Coins: {month} of {state.budget_dollars * COINS_PER_DOLLAR} earned this month, balance {state.balance}.")
+    month = state.dollars_by_month[(today.year, today.month)]
+    lines.append(f"Money: {money(month)} earned this month, balance {money(state.balance)}.")
     if ticket_ready(state, today, hour):
         lines.append("A weekly ticket is available after the warm-up.")
     lines.append(clock_line(now))
@@ -613,6 +756,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--id", required=True)
     p.add_argument("--text")
     p.add_argument("--importance", choices=IMPORTANCE)
+    p.add_argument("--pages", help="first-last, such as 40-43, in the book's printed page numbers")
     p.add_argument("--drop", action="store_true", help="remove a skill added by mistake, the same day only")
     p = sub.add_parser("rep", parents=[common])
     p.add_argument("--rep", required=True, help="session stamp and item number, such as 2026-09-18-0805#2")
@@ -646,15 +790,16 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--result", choices=("done", "abandoned"), required=True)
     p = sub.add_parser("tip", parents=[common])
     p.add_argument("--text", required=True)
-    p = sub.add_parser("set-rewards", parents=[common])
-    p.add_argument("--budget", type=int, required=True, help="whole dollars a month")
-    p.add_argument("--item", action="append", required=True, help='"name=dollars", such as "takeout=20"')
+    p = sub.add_parser("section", parents=[common])
+    p.add_argument("--heading", required=True, help="the heading from book/outline.txt, worked through and written up")
     p = sub.add_parser("redeem", parents=[common])
-    p.add_argument("--item", required=True)
+    p.add_argument("--item", required=True, help="what the money actually went on")
+    p.add_argument("--dollars", type=float, required=True)
     p = sub.add_parser("target", parents=[common])
     p.add_argument("--chars", type=int, required=True, help="characters in Claude's own solution, comments included")
     p.add_argument("--words", type=int, required=True, help="words the learner reads in the task")
     p.add_argument("--layer", type=int, choices=sorted(TIME_SCALE), required=True)
+    sub.add_parser("guide", parents=[common])
     sub.add_parser("hook-guard")
     return parser
 
@@ -673,6 +818,9 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         settings = load_settings(SETTINGS_FILE)
+        if args.command == "guide":
+            print(guide_text(settings))
+            return 0
         if args.command == "target":
             seconds = (args.chars / settings["coding_chars_per_minute"] + args.words / settings["reading_words_per_minute"]) * 60
             print(round(seconds * TIME_SCALE[args.layer]))
@@ -685,7 +833,10 @@ def main(argv: list[str] | None = None) -> int:
 
     hour = settings["day_starts_hour"]
     today = study_day(now, hour)
-    settle_rewards(state, today)
+    shut = session_locked()
+    if shut and args.command not in READ_ONLY:
+        print(shut)
+        return 1
     if args.command in ("hook-session-start", "status"):
         print(status_text(state, settings, now, check_git=args.command == "hook-session-start"))
         return 0
@@ -694,7 +845,7 @@ def main(argv: list[str] | None = None) -> int:
         if ahead:
             print(f"Warning: log line(s) {ahead} are dated more than a day ahead of this computer's clock.")
         print(f"OK: {len(state.skills)} skills, {sum(s.reps for s in state.skills.values())} counted reps, "
-              f"balance {state.balance} coins.")
+              f"balance {money(state.balance)}.")
         return 0
     if args.command in ("due", "skills"):
         building, scheduled = due_lists(state, settings, today)
@@ -748,6 +899,9 @@ def build_event(args, state: State, settings: dict, now: datetime, today: date) 
         for name in ("text", "importance"):
             if getattr(args, name):
                 event[name] = getattr(args, name)
+        if args.pages:
+            first, _, last = args.pages.partition("-")
+            event["pages"] = [int(first), int(last or first)]
         if args.drop:
             event["drop"] = True
     elif args.command == "rep":
@@ -779,25 +933,13 @@ def build_event(args, state: State, settings: dict, now: datetime, today: date) 
         event.update(id=args.id, result=args.result)
     elif args.command == "tip":
         event.update(text=args.text)
-    elif args.command == "set-rewards":
-        menu = []
-        for raw in args.item:
-            name, _, dollars = raw.rpartition("=")
-            if not name.strip() or not dollars.strip().isdigit() or int(dollars) <= 0:
-                print(f"Menu item {raw!r} needs the form name=whole dollars, such as takeout=20.")
-                return None
-            menu.append({"item": name.strip(), "dollars": int(dollars)})
-        if args.budget <= 0:
-            print("The budget has to be a positive whole number of dollars.")
-            return None
-        event.update(type="rewards", budget_dollars=args.budget, menu=menu)
+    elif args.command == "section":
+        event.update(heading=args.heading)
     elif args.command == "redeem":
-        match = next((m for m in state.menu if m["item"].casefold() == args.item.casefold()), None)
-        if match is None:
-            names = ", ".join(m["item"] for m in state.menu) or "nothing yet"
-            print(f"{args.item!r} is not on the menu ({names}).")
+        if args.dollars <= 0 or round(args.dollars, 2) != args.dollars:
+            print("Spending is a positive amount of dollars, to the cent, such as 42.50.")
             return None
-        event.update(item=match["item"], coins=match["dollars"] * COINS_PER_DOLLAR)
+        event.update(item=args.item, dollars=args.dollars)
     return event
 
 
@@ -813,22 +955,22 @@ def report(event: dict, before: State, after: State, settings: dict) -> None:
         lines += [f"- {text} ({when[:10]})" for when, text in after.tips]
         TIPS_FILE.write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
         print(f"Tip recorded; {TIPS_FILE.name} holds {len(after.tips)}.")
-    elif kind == "rewards":
-        items = ", ".join(f"{m['item']} {m['dollars'] * COINS_PER_DOLLAR} coins" for m in event["menu"])
-        when = "from tomorrow's study day" if before.budget_dollars is not None else "from now on"
-        print(f"Budget ${event['budget_dollars']} a month {when}; menu: {items}.")
+    elif kind == "section":
+        print(f"Section recorded: {event['heading']}.")
     elif kind == "redeem":
-        print(f"Redeemed {event['item']} for {event['coins']} coins: the learner spends ${event['coins'] // COINS_PER_DOLLAR} of real money on it.")
+        print(f"Spent {money(event['dollars'])} on {event['item']}.")
     else:
         print(f"Recorded {kind}.")
     gained = after.earned - before.earned
     if gained or kind == "redeem":
-        print(f"Coins: {gained:+d}, balance {after.balance}.")
+        sign = "+" if gained >= 0 else "-"
+        print(f"Money: {sign}{money(abs(gained))}, balance {money(after.balance)}.")
 
 
 def hook_guard() -> int:
-    """PreToolUse hook: block Edit and Write on the log, so every change goes through harness.py
-    and gets checked by a replay first."""
+    """PreToolUse hook: block Edit and Write on the two records, so every change goes through the
+    tools and gets checked first. The clock's record is guarded with the log, because minutes
+    decide when a session locks and a hand-edited time.csv is the same kind of rewrite."""
     try:
         payload = json.loads(sys.stdin.buffer.read().decode("utf-8"))
     except (ValueError, UnicodeDecodeError):
@@ -837,6 +979,10 @@ def hook_guard() -> int:
     if path.endswith("practice/log.jsonl"):
         print("PRACTICE/log.jsonl is written only by harness.py, which checks each event by replaying "
               "the log. Use a harness.py command; fix mistakes with `amend`.", file=sys.stderr)
+        return 2
+    if path.endswith("practice/time.csv"):
+        print("PRACTICE/time.csv is written only by clock.py. Use `clock.py charge --minutes N` for "
+              "study time spent away from the chat, and `clock.py end` to close a session.", file=sys.stderr)
         return 2
     return 0
 

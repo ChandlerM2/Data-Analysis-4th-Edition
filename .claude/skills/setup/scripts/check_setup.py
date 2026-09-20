@@ -15,6 +15,7 @@ project environment exists, the same way on Windows, macOS, and Linux.
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import shutil
@@ -27,6 +28,8 @@ GUIDE_NAME = "writing-for-future-readers.md"
 GUIDE_SOURCE = Path(__file__).resolve().parents[1] / "files" / GUIDE_NAME
 GUIDE_TARGET = Path.home() / ".claude" / "rules" / GUIDE_NAME
 BOOK_PDF = REPO / "book" / "Python Data Analysis - Fourth Edition.pdf"
+TIME_FILE = REPO / "PRACTICE" / "time.csv"
+LOG_FILE = REPO / "PRACTICE" / "log.jsonl"
 VSCODE_EXTENSIONS = ("ms-python.python", "ms-toolsai.jupyter", "astral-sh.ty")
 NOREPLY_SUFFIX = "@users.noreply.github.com"
 
@@ -161,6 +164,51 @@ def check_practice_tools(report: Report) -> None:
         report.append(("info", "practice tools", "PRACTICE/tools/harness.py validate failed. Ask Claude to look at PRACTICE/log.jsonl."))
 
 
+def practice_record() -> tuple[int, int, int]:
+    """How much practice the two records hold: log events, skills among them, and clock sessions.
+    Counted defensively, because a half-written line has to be reported rather than crash setup."""
+    events = skills = sessions = 0
+    if LOG_FILE.exists():
+        for line in LOG_FILE.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            events += 1
+            try:
+                skills += json.loads(line).get("type") == "skill"
+            except ValueError:
+                pass
+    if TIME_FILE.exists():
+        sessions = sum(1 for line in TIME_FILE.read_text(encoding="utf-8").splitlines()
+                       if line.strip() and not line.startswith("study_day,"))
+    return events, skills, sessions
+
+
+def check_practice_history(report: Report) -> None:
+    """Whose practice this clone carries. PRACTICE/log.jsonl and PRACTICE/time.csv are both tracked
+    in git, so a clone arrives holding the skills, balance, and sessions of whoever committed them.
+    On the learner's own second computer that record is theirs and has to stay, because the harness
+    replays the log to work out every layer and due day, and a warm-up done on one machine counts on
+    the other once it pushes and this one pulls. For anyone else it is a stranger's record: they
+    would inherit skills they have never seen, at layers they never earned.
+
+    Nothing here can tell those two apart on its own, so the learner is asked, and asked only on a
+    first setup: a missing .venv is what says this computer has never run the repo before. Once uv
+    has built it the question is settled and is not raised again."""
+    events, skills, sessions = practice_record()
+    if not events and not sessions:
+        report.append(("ok", "practice history", "no practice recorded yet; both records start empty"))
+        return
+    if venv_python().exists():
+        report.append(("ok", "practice history",
+                       f"{events} log events ({skills} skills), {sessions} clock sessions, on a computer already set up"))
+        return
+    owner = run("git", "log", "-1", "--format=%ae", "--", "PRACTICE/log.jsonl", "PRACTICE/time.csv")
+    whose = f", last committed by {owner.stdout.strip()}" if succeeded(owner) and owner.stdout.strip() else ""
+    report.append(("fix", "practice history",
+                   f"First setup here, and PRACTICE already holds {events} log events ({skills} skills) "
+                   f"and {sessions} clock sessions{whose}. Ask whether that record is theirs, or they are starting their own."))
+
+
 def check_writing_guide(report: Report) -> None:
     if not GUIDE_TARGET.exists():
         report.append(("fix", "writing guide", f"Not installed. Copy the repo copy to {GUIDE_TARGET}."))
@@ -218,7 +266,7 @@ def main() -> int:
     report: Report = []
     # History comes before the environment because resetting to GitHub can change uv.lock.
     for check in (check_uv, check_git_email, check_git_history, check_environment, check_practice_tools,
-                  check_writing_guide, check_vscode, check_book, check_java):
+                  check_practice_history, check_writing_guide, check_vscode, check_book, check_java):
         check(report)
 
     width = max(len(name) for _, name, _ in report)

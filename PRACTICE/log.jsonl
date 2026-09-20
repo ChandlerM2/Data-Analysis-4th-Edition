@@ -8,3 +8,19 @@
 {"type": "skill", "at": "2026-09-17T01:17", "id": "np-like-dtype", "text": "The _like functions copy the source array's shape and its dtype, unless you pass dtype yourself.", "kind": "code", "importance": "core", "chapter": 2, "pages": [70, 71], "source": "packt-notebook"}
 {"type": "skill", "at": "2026-09-17T01:17", "id": "np-dtype-casts", "text": "Passing dtype converts the values: int drops the decimal part toward zero, and bool is False only for zero.", "kind": "code", "importance": "useful", "chapter": 2, "pages": [67, 68], "source": "packt-notebook"}
 {"type": "skill", "at": "2026-09-17T01:17", "id": "np-type-dtype-shape", "text": "type() names the container, .dtype names the type of every element, and .shape gives the length along each axis.", "kind": "code", "importance": "core", "chapter": 2, "pages": [71, 72], "source": "packt-notebook"}
+{"type": "question", "at": "2026-09-19T23:04", "text": "Fridays and Saturdays: no window and no budget (unlimited study time), because the learner can work late into the night on those days. Asked 2026-09-19 evening. If confirmed, set it in PRACTICE/settings.json, not in the tools.", "kind": "rule"}
+{"type": "pages", "at": "2026-09-19T23:05", "chapter": 2, "page": 72, "heading": "Selecting array elements", "next": "Warm-up: the four L1 NumPy dtype reps in chat as predictions, then read from p72 (Selecting array elements). Confirm the Friday/Saturday unlimited-time rule at the opening."}
+{"type": "question", "at": "2026-09-19T23:05", "text": "Replaces the 23:04 request. Weekend window: no limit from Friday 17:00 (after work) until Sunday 12:00, then normal windows resume. Asked 2026-09-19 evening; confirm at the next session's opening, then set it in PRACTICE/settings.json.", "kind": "rule"}
+{"type": "pages", "at": "2026-09-19T23:05", "chapter": 2, "page": 72, "heading": "Selecting array elements", "next": "Confirm the weekend rule (Friday 17:00 to Sunday 12:00, no limit) at the opening, then the four L1 NumPy dtype reps in chat as predictions, then read from p72 (Selecting array elements)."}
+{"type": "question", "at": "2026-09-19T23:16", "close": 1}
+{"type": "question", "at": "2026-09-19T23:16", "close": 2}
+{"type": "pages", "at": "2026-09-20T14:27", "chapter": 2, "page": 45, "heading": "Selecting array elements", "next": "Warm-up (4 concept reps due), then read Chapter 2 from p45, Selecting array elements. Page numbers are the printed ones now."}
+{"type": "skill-edit", "at": "2026-09-20T14:35", "id": "process-kdd-loop", "pages": [5, 6]}
+{"type": "skill-edit", "at": "2026-09-20T14:35", "id": "process-crisp-dm", "pages": [7, 9]}
+{"type": "skill-edit", "at": "2026-09-20T14:35", "id": "tools-spark-memory", "pages": [35, 36]}
+{"type": "skill-edit", "at": "2026-09-20T14:35", "id": "env-uv-sync", "pages": [16, 18]}
+{"type": "skill-edit", "at": "2026-09-20T14:35", "id": "np-one-dtype", "pages": [40, 41]}
+{"type": "skill-edit", "at": "2026-09-20T14:35", "id": "np-pick-creation", "pages": [41, 43]}
+{"type": "skill-edit", "at": "2026-09-20T14:35", "id": "np-like-dtype", "pages": [43, 44]}
+{"type": "skill-edit", "at": "2026-09-20T14:35", "id": "np-dtype-casts", "pages": [40, 41]}
+{"type": "skill-edit", "at": "2026-09-20T14:35", "id": "np-type-dtype-shape", "pages": [44, 45]}

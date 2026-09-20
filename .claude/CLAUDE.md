@@ -25,11 +25,14 @@ from them, and rotate across both and across departments instead of settling int
 - `PRACTICE/` is the teaching harness: the log of skills and reps, session notebooks, reward
   settings, and tools. **Read `PRACTICE/CLAUDE.md` at the start of every session and follow it:
   it runs the warm-up, the study session, and the weekly ticket.**
-- `book/` holds `outline.txt` (every chapter, section, and subsection with its PDF page
-  number) and, on machines where the learner has added it, the book's PDF, which is never
-  committed. `book/README.md` explains how to add it. The Read tool may not render the PDF;
-  extract pages with `uv run --no-project --with pypdf python`. The text is for your
-  understanding and for building problems, never for pasting chapters at the learner.
+- `book/` holds `outline.txt` (every chapter, section, and subsection with the page number
+  printed on its first page) and, on machines where the learner has added it, the book's PDF,
+  which is never committed. `book/README.md` explains how to add it. **Every page number in this
+  repo is the printed one, the number the learner can see on the page and in their reader.**
+  Never use the file's page count. To extract a page, run `uv run --no-project --with pypdf
+  python` and find the position with `list(reader.page_labels).index("45")`, because the offset
+  between printed and physical pages changes between the front matter and the body. The text is
+  for your understanding and for building problems, never for pasting chapters at the learner.
 - `pyproject.toml` and `uv.lock` define the environment. `uv` manages it.
 - The repo moves between Windows, macOS, and Linux. Paths and commands you give or write into
   files use forward slashes and `uv run`, never backslashes or shell-specific syntax.
@@ -140,6 +143,15 @@ Search before answering when the answer depends on a library version, a product 
 (Databricks editions, cloud services), or anything likely to have changed since your training
 data. The GenAI and LLM chapters date fastest. Cite the sources you used. When memory and a
 source disagree, say so and go with the source.
+
+## Checking your own work
+
+**Subagents that verify a finding run on the second cheapest model available, Sonnet today, not the
+model that did the finding.** Finding defects is open-ended search; refuting one is bounded work,
+run the command you were handed and compare what printed against the claim, and verification is
+where the agent count multiplies. A finding survives only if no verifier refutes it, so a cheap
+verifier kills real findings rather than admitting false ones: tell verifiers to paste the output
+they actually ran, and send only the disagreements up to the stronger model.
 
 ## Keeping this file current
 

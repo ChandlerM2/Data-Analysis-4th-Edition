@@ -2,6 +2,15 @@
   "hooks": {
     "SessionStart": [
       {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --no-project python \"$CLAUDE_PROJECT_DIR/PRACTICE/tools/clock.py\" session-start"
+          }
+        ]
+      },
+      {
         "hooks": [
           {
             "type": "command",
@@ -27,6 +36,16 @@
           {
             "type": "command",
             "command": "uv run --no-project python \"$CLAUDE_PROJECT_DIR/PRACTICE/tools/harness.py\" hook-guard"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --no-project python \"$CLAUDE_PROJECT_DIR/PRACTICE/tools/clock.py\" end"
           }
         ]
       }
