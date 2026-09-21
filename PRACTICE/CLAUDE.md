@@ -202,6 +202,11 @@ or setting than the skill's last rep (`skills` shows it).
   practice attempts stay out of their own work. Tool-picks and one-line answers stay in chat.
   Build a notebook by writing a spec and running
   `uv run --no-project python PRACTICE/tools/notebook.py SPEC PRACTICE/sessions/<stamp>.ipynb`.
+- Append every rep to `PRACTICE/sessions/reps.md` right after you record it, under a heading for
+  the session's stamp: the rep as it was asked, the learner's answer in their own words, and your
+  feedback. One growing file, never a new file per session, so the whole history reads in one
+  place. The learner rereads these to see what they missed and how they said it, and chat
+  scrollback doesn't keep that.
 - Time reps at layer 4 and up where the learner types code: get seconds from `target`, with
   `--chars` counting only what the learner types (not code shown to them), tell the learner the
   target in minutes, and record `--seconds` and `--target-seconds`. Leave answers in words untimed. Running over costs only the clean bonus,

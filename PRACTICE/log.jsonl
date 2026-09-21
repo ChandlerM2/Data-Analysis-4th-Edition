@@ -24,3 +24,10 @@
 {"type": "skill-edit", "at": "2026-09-20T14:35", "id": "np-like-dtype", "pages": [43, 44]}
 {"type": "skill-edit", "at": "2026-09-20T14:35", "id": "np-dtype-casts", "pages": [40, 41]}
 {"type": "skill-edit", "at": "2026-09-20T14:35", "id": "np-type-dtype-shape", "pages": [44, 45]}
+{"type": "rep", "at": "2026-09-20T20:28", "rep": "2026-09-20-2016#1", "skill": "process-kdd-loop", "format": "explain", "result": "correct", "help": 0}
+{"type": "rep", "at": "2026-09-20T20:38", "rep": "2026-09-20-2016#2", "skill": "process-crisp-dm", "format": "explain", "result": "correct", "help": 1}
+{"type": "rep", "at": "2026-09-20T20:49", "rep": "2026-09-20-2016#3", "skill": "tools-spark-memory", "format": "explain", "result": "correct", "help": 0}
+{"type": "rep", "at": "2026-09-20T20:53", "rep": "2026-09-20-2016#4", "skill": "env-uv-sync", "format": "explain", "result": "wrong", "help": 0}
+{"type": "fix", "at": "2026-09-20T20:55", "rep": "2026-09-20-2016#4"}
+{"type": "tip", "at": "2026-09-20T20:56", "text": "When two files or steps sound interchangeable, ask which one states a wish and which one records what happened: pyproject.toml wishes for pandas>=2, uv.lock records pandas 3.0.5."}
+{"type": "pages", "at": "2026-09-20T20:57", "chapter": 2, "page": 45, "heading": "Selecting array elements", "next": "Read Chapter 2 from p45, Selecting array elements, typing each cell and predicting before running; env-uv-sync is owed a layer 2 typed rep."}
