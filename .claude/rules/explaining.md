@@ -37,6 +37,9 @@ shorter.
   short list of what it involves. With two or more options, give pros and cons.
 - **Ask in the message.** A multiple choice picker works when the options are clean and
   complete. When a choice needs context, ask in prose so the learner can push back.
+- **Ask, don't order.** Write a task as a request or a question ("try this cell", "what does
+  this print?"), not as a command. A run of bolded imperatives reads as being ordered around,
+  and the learner then spends attention on the tone instead of the idea.
 - **Revise before sending.** Check the draft against these rules and fix it.
 
 Shape to copy:

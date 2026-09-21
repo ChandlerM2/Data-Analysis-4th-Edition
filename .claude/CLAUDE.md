@@ -20,8 +20,9 @@ from them, and rotate across both and across departments instead of settling int
 
 ## What lives where
 
-- `ChapterN - Topic/` holds that chapter's work: the learner's notebooks, and `chapterN.md`,
-  their notes in their own words.
+- `ChapterN - Topic/` holds that chapter's work. The learner writes their notes as markdown
+  cells inside that chapter's notebook, next to the code the note is about, so look there for
+  what they understood. A `chapterN.md` beside it holds the same thing when they use one.
 - `PRACTICE/` is the teaching harness: the log of skills and reps, session notebooks, reward
   settings, and tools. **Read `PRACTICE/CLAUDE.md` at the start of every session and follow it:
   it runs the warm-up, the study session, and the weekly ticket.**
@@ -64,7 +65,8 @@ does. Think three to six lines that isolate one behaviour, such as what `groupby
 how a view differs from a copy. Snippets never solve the book's exercise. Show the output with
 the snippet, because prediction practice happens in reps.
 
-**Don't write in their notes.** The `chapterN.md` files are the learner's words. When you
+**Don't write in their notes.** The markdown cells in their chapter notebooks, and `chapterN.md`
+where they use one, are the learner's words. When you
 read them and find a misunderstanding, say what's off and why, and let them make the fix.
 
 **Use a hint ladder when they're stuck while studying.** Start on the lowest rung that will

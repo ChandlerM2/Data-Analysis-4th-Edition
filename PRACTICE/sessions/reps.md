@@ -83,3 +83,67 @@ resolves to a different version depending on the day you run it. `uv.lock` recor
 that resolution already made, one exact version per package, and `uv sync` builds `.venv` from
 it, which is why the contractor's environment matches yours down to the patch number. Your
 follow-up walked that chain correctly, so it counts as a fix.
+
+## 2026-09-21-1051
+
+### Rep 1 - env-uv-sync (L2, fill) - correct, no help
+
+**Q:** Marcus's new sales ops analyst is setting up the lead-scoring repo on a fresh laptop. The
+runbook has one step blanked out. Type the missing line, and name the file it reads to decide
+which pandas version lands in `.venv`.
+
+```
+git clone git@github.com:cobalt-trail/pipeline-reports.git
+cd pipeline-reports
+______________
+uv run python scripts/score_leads.py
+```
+
+**Your answer:** The line missing is `uv sync`. It should read the `uv.lock` file to understand
+the version of any library that needs to be in the `.venv`, because the `uv.lock` file is
+explicit unlike the `pyproject.toml` files.
+
+**My answer:** Both halves right, and "explicit" is the word that carries it: `uv.lock` names one
+exact version per package, `pyproject.toml` names a range. That is the piece that was missing on
+2026-09-20, so the skill is back at L3.
+
+### Rep 2 - np-dtype-casts (L1, predict) - correct, no help
+
+**Q:** Dana sends over a spend extract and wants to know what these two lines do before she trusts
+them. What does each line print?
+
+```python
+spend = np.array([1299.75, 840.20, 0.0, 17.99])
+print(spend.astype(int))
+print(spend.astype(bool))
+```
+
+**Your answer:** int should just print 1299, 840, 0, 17 (because it just strips the whole number),
+and bool will be T, T, F, T except they will actually say True and False. Anything outside of 0 is
+True.
+
+**My answer:** Both right, including the reason bool gives True for anything nonzero. The
+sharpening: it truncates toward zero rather than dropping digits, so a credit memo of -17.99
+becomes -17, not -18, which in finance data moves money the wrong way.
+
+### Rep 3 - np-one-dtype (L1, predict) - wrong, then fixed
+
+**Q:** Priya pulls vendor lead times and a SKU list into arrays. What does each dtype come back as?
+
+```python
+lead = np.array([7, 14, 21.5])
+print(lead.dtype)
+
+sku = np.array([5, "TENT-22", 3.0])
+print(sku.dtype)
+```
+
+**Your answer:** Both types are not the same or homogeneous, so I am going to say a type error will
+form. [After the model:] lead will be a float and sku will be a string type. For the float I would
+say float64 since it's the most general, but for data sizing float16?
+
+**My answer:** The homogeneous part was right, and that is why there is no error: an array is one
+block of memory with one type, so NumPy picks a type that can hold every value and converts the
+whole thing. Refusing would leave it nothing to store. Ints with floats land on float64, and
+anything mixed with text lands on text (`<U32`, meaning Unicode up to 32 characters), so the
+numbers become the strings '5' and '3.0'.

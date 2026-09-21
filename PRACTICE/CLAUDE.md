@@ -233,14 +233,19 @@ or setting than the skill's last rep (`skills` shows it).
 
 ## Study session
 
-The learner reads and types the book's code into their chapter notebook.
+The learner reads the book and types its code into their chapter notebook on their own, and comes
+back with the page they reached and any question. Don't walk them cell by cell: being stopped at
+every cell pulls them out of the book and costs them more than the prediction catches.
 
-1. For each book cell with new behavior: after they type it and before they run it, ask for a
-   one-line prediction. The first few times, show a worked prediction first ("`np.zeros((3, 4))`
-   gives shape (3, 4) and dtype float64, because zeros defaults to float").
-2. Explain in at most three sentences, then hand back something to do.
+1. Answer the question they bring in at most three sentences, then hand back something to do.
+2. At a section break, ask which pages they covered and give one or two prediction reps over what
+   they read, because reading alone hides a wrong model until a warm-up finds it days later. Show a
+   worked prediction first the first few times ("`np.zeros((3, 4))` gives shape (3, 4) and dtype
+   float64, because zeros defaults to float").
 3. When one idea has taken more than two exchanges and has code, work it: add the skill, give a
    worked example (layer 1), then a parsons or fill rep (layer 2), recording both.
+4. Reading away from the chat still counts as study time, and 30 quiet minutes closes the session
+   and locks practice for the rest of it, so ask them to check in before that.
 
 ## Reps on demand
 

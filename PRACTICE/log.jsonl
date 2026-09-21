@@ -31,3 +31,14 @@
 {"type": "fix", "at": "2026-09-20T20:55", "rep": "2026-09-20-2016#4"}
 {"type": "tip", "at": "2026-09-20T20:56", "text": "When two files or steps sound interchangeable, ask which one states a wish and which one records what happened: pyproject.toml wishes for pandas>=2, uv.lock records pandas 3.0.5."}
 {"type": "pages", "at": "2026-09-20T20:57", "chapter": 2, "page": 45, "heading": "Selecting array elements", "next": "Read Chapter 2 from p45, Selecting array elements, typing each cell and predicting before running; env-uv-sync is owed a layer 2 typed rep."}
+{"type": "rep", "at": "2026-09-21T10:58", "rep": "2026-09-21-1051#1", "skill": "env-uv-sync", "format": "fill", "result": "correct", "help": 0}
+{"type": "tip", "at": "2026-09-21T10:59", "text": "pyproject.toml states a wish (a range); uv.lock records the decision (one exact version). uv sync builds .venv from the lock."}
+{"type": "question", "at": "2026-09-21T12:34", "text": "What are the Unicode (U) and Void (V) NumPy dtypes for? (ch2 p49, character codes)", "kind": "why"}
+{"type": "question", "at": "2026-09-21T12:34", "text": "What is a constructor in Python, and why is np.dtype('float64') called one? (ch2 p50, data type constructors)", "kind": "why"}
+{"type": "question", "at": "2026-09-21T12:34", "text": "Walk the byte-count paragraph above Data type attributes on ch2 p50: how the itemsize of each dtype is read off its name.", "kind": "why"}
+{"type": "rep", "at": "2026-09-21T12:41", "rep": "2026-09-21-1051#2", "skill": "np-dtype-casts", "format": "predict", "result": "correct", "help": 0}
+{"type": "rep", "at": "2026-09-21T12:45", "rep": "2026-09-21-1051#3", "skill": "np-one-dtype", "format": "predict", "result": "wrong", "help": 0}
+{"type": "fix", "at": "2026-09-21T12:48", "rep": "2026-09-21-1051#3"}
+{"type": "pages", "at": "2026-09-21T12:48", "chapter": 2, "page": 51, "heading": "Converting arrays", "next": "Read Chapter 2 from p52, Manipulating array shapes, on your own; check in at the section break for reps. Chapter2.md is still empty, so the dtype sections are waiting on a write-up."}
+{"type": "pages", "at": "2026-09-21T12:57", "chapter": 2, "page": 51, "heading": "Converting arrays", "next": "Read Chapter 2 from p51, Converting arrays, which is not started yet; check in at the section break for reps. Chapter2.md is still empty, so the dtype sections are waiting on a write-up."}
+{"type": "section", "at": "2026-09-21T12:58", "heading": "Selecting array elements"}
